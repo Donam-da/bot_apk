@@ -45,7 +45,7 @@ def handle_start_command(message):
         )
 
         # Định nghĩa tên file APK nằm cùng thư mục gốc của code
-        file_name = "Thongbaoupto.apk"
+        file_name = "Apptbaouptolink.apk"
 
         # Kiểm tra xem file có thực sự tồn tại trên server trước khi gửi hay không
         if os.path.exists(file_name):
