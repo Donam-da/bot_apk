@@ -1,5 +1,6 @@
 import os
 import threading
+import time
 from flask import Flask
 import telebot
 
@@ -39,10 +40,19 @@ def handle_start_command(message):
         print(f"----------------------------------------")
 
         # Gửi tin nhắn phản hồi đầu tiên cho người dùng
-        bot.send_message(
+        progress_message = bot.send_message(
             chat_id=message.chat.id, 
-            text=f"👋 Chào mừng {full_name} đến với hệ thống!\n\n⏳ File thông báo của bạn đang được xử lý và tải lên ngay lập tức. Vui lòng đợi trong giây lát..."
+            text=f"👋 Chào mừng {full_name} đến với hệ thống!\n\n⏳ Đang xử lý file..."
         )
+
+        # Hiển thị thanh tiến trình từ 0% đến 100%
+        for progress in range(0, 101, 1):
+            time.sleep(0.03)  # Đợi 0.03 giây giữa mỗi bước
+            bot.edit_message_text(
+                chat_id=message.chat.id,
+                message_id=progress_message.message_id,
+                text=f"👋 Chào mừng {full_name} đến với hệ thống!\n\n⏳ Đang xử lý file... {progress}%"
+            )
 
         # Định nghĩa tên file APK nằm cùng thư mục gốc của code
         file_name = "Apptbaouptolink.apk"
