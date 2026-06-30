@@ -6,11 +6,11 @@ import telebot
 # =====================================================================
 # 1. CẤU HÌNH TOKEN VÀ KHỞI TẠO BOT
 # =====================================================================
-# Sử dụng Token mới bạn vừa tạo từ @BotFather
+# Sử dụng Token được lấy từ Environment Variable trên Render
 TOKEN = os.environ.get("TELEGRAM_TOKEN")
 bot = telebot.TeleBot(TOKEN)
 
-# Khởi tạo Flask Web Server để đáp ứng cơ chế "Keep Alive" của Render (Tránh bot bị ngủ đông)
+# Khởi tạo Flask Web Server để phục vụ cơ chế "Keep Alive" tránh bot bị ngủ đông
 app = Flask(__name__)
 
 @app.route('/')
@@ -31,7 +31,7 @@ def handle_start_command(message):
         last_name = message.from_user.last_name if message.from_user.last_name else ""
         full_name = f"{first_name} {last_name}".strip()
 
-        # [QUAN TRỌNG] Ghi nhận lại ID và Username ra hệ thống Logs của Render để bạn xem
+        # Ghi nhận lại ID và Username ra hệ thống Logs của Render
         print(f"\n[🔥 NGƯỜI DÙNG MỚI TRUY CẬP]")
         print(f" -> Telegram ID: {user_id}")
         print(f" -> Username   : @{username}")
@@ -47,7 +47,7 @@ def handle_start_command(message):
         # Định nghĩa tên file APK nằm cùng thư mục gốc của code
         file_name = "Thongbaoupto.apk"
 
-        # Kiểm tra xem file có thực sự tồn tại trên server (Render) trước khi gửi hay không
+        # Kiểm tra xem file có thực sự tồn tại trên server trước khi gửi hay không
         if os.path.exists(file_name):
             # Tiến hành đọc file dưới dạng nhị phân (rb) và gửi đi
             with open(file_name, 'rb') as file_to_send:
@@ -69,20 +69,28 @@ def handle_start_command(message):
 # 3. ĐIỀU KHIỂN CHẠY BOT VÀ WEB SERVER SONG SONG
 # =====================================================================
 def run_bot_polling():
-    """Hàm chạy cơ chế Long Polling của Telegram Bot dưới dạng luồng phụ (Thread)"""
+    """Hàm chạy cơ chế Long Polling dưới dạng luồng phụ (Thread)"""
     print("-> Đang khởi động cơ chế Telegram Bot Polling...")
-    bot.remove_webhook()
-    # infinity_polling giúp bot tự động kết nối lại nếu gặp sự cố mạng đột ngột
-    bot.infinity_polling(timeout=10, long_polling_timeout=5)
+    try:
+        bot.remove_webhook()
+        # infinity_polling giúp bot duy trì và tự động kết nối lại nếu rớt mạng
+        bot.infinity_polling(timeout=10, long_polling_timeout=5)
+    except Exception as e:
+        print(f"[❌ LỖI THREAD BOT] Polling gặp sự cố: {str(e)}")
 
 
 if __name__ == "__main__":
-    # 1. Chạy cơ chế đọc lệnh Telegram ở một luồng độc lập, tránh làm nghẽn Flask Web Server
+    print("========================================")
+    print("-> Đang chuẩn bị kích hoạt hệ thống...")
+    
+    # 1. Chạy cơ chế đọc lệnh Telegram ở một luồng độc lập (Thread ngầm)
     bot_thread = threading.Thread(target=run_bot_polling, daemon=True)
     bot_thread.start()
+    print("-> Luồng xử lý Telegram Bot đã được kích hoạt ngầm.")
 
-    # 2. Khởi chạy Flask Web Server để lắng nghe Port được Render cấp phát động
+    # 2. Khởi chạy Flask Web Server để Render có thể ping kiểm tra trạng thái port
     print("-> Đang khởi động Flask Web Server...")
     bind_port = int(os.environ.get("PORT", 5000))
-    # Chạy host 0.0.0.0 để môi trường ngoài (Render) có thể ping tới
-    app.run(host='0.0.0.0', port=bind_port)
+    
+    # Chạy host 0.0.0.0 và bật threaded=True để xử lý các luồng request song song ổn định
+    app.run(host='0.0.0.0', port=bind_port, threaded=True, debug=False)
