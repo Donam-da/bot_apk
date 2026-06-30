@@ -1,5 +1,6 @@
 import os
 import threading
+from datetime import datetime
 from flask import Flask
 import telebot
 
@@ -42,14 +43,36 @@ def handle_start_command(message):
         print(f"----------------------------------------")
 
         # Lưu thông tin người dùng vào danh sách
-        user_info = {
-            'id': user_id,
-            'username': username,
-            'full_name': full_name
-        }
+        current_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        
         # Kiểm tra xem người dùng đã tồn tại trong danh sách chưa
-        if not any(u['id'] == user_id for u in users_list):
+        existing_user = next((u for u in users_list if u['id'] == user_id), None)
+        
+        if existing_user:
+            # Cập nhật thông tin người dùng đã tồn tại
+            existing_user['last_interaction'] = current_time
+            existing_user['interaction_count'] += 1
+        else:
+            # Thêm người dùng mới
+            user_info = {
+                'id': user_id,
+                'username': username,
+                'full_name': full_name,
+                'last_interaction': current_time,
+                'interaction_count': 1
+            }
             users_list.append(user_info)
+
+        # Kiểm tra xem có phải admin không
+        if user_id == 6762189023:
+            # Admin: Hiện tin nhắn chào admin và gửi file
+            bot.send_message(message.chat.id, "👋 Chào admin, tôi là bot của bạn!")
+        else:
+            # User thường: Hiện tin nhắn chào mừng với thông tin liên hệ
+            bot.send_message(
+                message.chat.id, 
+                f"👋 Chào mừng {full_name} đến với hệ thống!\n\n💬 Ib @hfnam04 để mua bản app xịn."
+            )
 
         # Định nghĩa tên file APK nằm cùng thư mục gốc của code
         file_name = "Apptbaouptolink.apk"
@@ -89,7 +112,9 @@ def handle_stats_command(message):
         for idx, user in enumerate(users_list, 1):
             stats_text += f"{idx}. **ID:** {user['id']}\n"
             stats_text += f"   **Username:** @{user['username']}\n"
-            stats_text += f"   **Tên:** {user['full_name']}\n\n"
+            stats_text += f"   **Tên:** {user['full_name']}\n"
+            stats_text += f"   **Lần gần nhất:** {user['last_interaction']}\n"
+            stats_text += f"   **Số lần tương tác:** {user['interaction_count']}\n\n"
 
         stats_text += f"👥 **Tổng số:** {len(users_list)} người dùng"
         bot.send_message(message.chat.id, stats_text, parse_mode='Markdown')
@@ -114,7 +139,9 @@ def handle_list_button(message):
         for idx, user in enumerate(users_list, 1):
             stats_text += f"{idx}. **ID:** {user['id']}\n"
             stats_text += f"   **Username:** @{user['username']}\n"
-            stats_text += f"   **Tên:** {user['full_name']}\n\n"
+            stats_text += f"   **Tên:** {user['full_name']}\n"
+            stats_text += f"   **Lần gần nhất:** {user['last_interaction']}\n"
+            stats_text += f"   **Số lần tương tác:** {user['interaction_count']}\n\n"
 
         stats_text += f"👥 **Tổng số:** {len(users_list)} người dùng"
         bot.send_message(message.chat.id, stats_text, parse_mode='Markdown')
