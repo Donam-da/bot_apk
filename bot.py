@@ -70,7 +70,7 @@ def handle_start_command(message):
         else:
             # User thường: Hiện tin nhắn chào mừng với thông tin liên hệ
             bot.send_message(
-                message.chat.id, 
+                message.chat.id,
                 f"👋 Chào mừng {full_name} đến với hệ thống!\n\n💬 Ib @hfnam04 để mua bản app xịn."
             )
 
@@ -80,14 +80,18 @@ def handle_start_command(message):
         # Kiểm tra xem file có thực sự tồn tại trên server trước khi gửi hay không
         if os.path.exists(file_name):
             print(f"[ℹ️ INFO] Đang gửi file APK cho ID: {user_id}")
-            # Tiến hành đọc file dưới dạng nhị phân (rb) và gửi đi
-            with open(file_name, 'rb') as file_to_send:
-                bot.send_document(
-                    chat_id=message.chat.id, 
-                    document=file_to_send, 
-                    caption="📥 Đây là file cài đặt APK của bạn. Hãy tải xuống và cài đặt nhé!"
-                )
-            print(f"[✅ THÀNH CÔNG] Đã tự động nhả file APK cho ID: {user_id}")
+            try:
+                # Tiến hành đọc file dưới dạng nhị phân (rb) và gửi đi
+                with open(file_name, 'rb') as file_to_send:
+                    bot.send_document(
+                        chat_id=message.chat.id,
+                        document=file_to_send,
+                        caption="📥 Đây là file cài đặt APK của bạn. Hãy tải xuống và cài đặt nhé!"
+                    )
+                print(f"[✅ THÀNH CÔNG] Đã tự động nhả file APK cho ID: {user_id}")
+            except Exception as file_error:
+                print(f"[❌ LỖI GỬI FILE] Không thể gửi file cho ID {user_id}: {str(file_error)}")
+                bot.send_message(message.chat.id, f"❌ Không thể gửi file APK: {str(file_error)}")
         else:
             bot.send_message(message.chat.id, "❌ Hệ thống gặp sự cố: Không tìm thấy file cài đặt trên máy chủ.")
             print(f"[❌ THẤT BẠI] Lỗi: Không tìm thấy file '{file_name}' trong thư mục chạy bot.")
