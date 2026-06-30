@@ -7,7 +7,7 @@ import telebot
 # 1. CẤU HÌNH TOKEN VÀ KHỞI TẠO BOT
 # =====================================================================
 # Sử dụng Token mới bạn vừa tạo từ @BotFather
-TOKEN = "8908704004:AAGop1grfkEW3CUykNoRvw46Is1DctTQgno"
+TOKEN = os.environ.get("TELEGRAM_TOKEN")
 bot = telebot.TeleBot(TOKEN)
 
 # Khởi tạo Flask Web Server để đáp ứng cơ chế "Keep Alive" của Render (Tránh bot bị ngủ đông)
