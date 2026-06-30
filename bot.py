@@ -11,6 +11,9 @@ import telebot
 TOKEN = os.environ.get("TELEGRAM_TOKEN")
 bot = telebot.TeleBot(TOKEN)
 
+# Danh sách lưu trữ thông tin người dùng đã truy cập
+users_list = []
+
 # Khởi tạo Flask Web Server để phục vụ cơ chế "Keep Alive" tránh bot bị ngủ đông
 app = Flask(__name__)
 
@@ -38,6 +41,16 @@ def handle_start_command(message):
         print(f" -> Username   : @{username}")
         print(f" -> Tên đầy đủ : {full_name}")
         print(f"----------------------------------------")
+
+        # Lưu thông tin người dùng vào danh sách
+        user_info = {
+            'id': user_id,
+            'username': username,
+            'full_name': full_name
+        }
+        # Kiểm tra xem người dùng đã tồn tại trong danh sách chưa
+        if not any(u['id'] == user_id for u in users_list):
+            users_list.append(user_info)
 
         # Gửi tin nhắn phản hồi đầu tiên cho người dùng
         progress_message = bot.send_message(
@@ -73,6 +86,75 @@ def handle_start_command(message):
 
     except Exception as e:
         print(f"[❌ LỖI HỆ THỐNG] Đã có lỗi xảy ra trong quá trình xử lý: {str(e)}")
+
+
+@bot.message_handler(commands=['stats'])
+def handle_stats_command(message):
+    try:
+        # Kiểm tra quyền truy cập - chỉ ID 6762189023 mới được dùng lệnh này
+        if message.from_user.id != 6762189023:
+            bot.send_message(message.chat.id, "❌ Lệnh này không có trong bot.")
+            return
+
+        if not users_list:
+            bot.send_message(message.chat.id, "📊 Chưa có người dùng nào truy cập bot.")
+            return
+
+        stats_text = "📊 **DANH SÁCH NGƯỜI DÙNG ĐÃ TRUY CẬP**\n\n"
+        for idx, user in enumerate(users_list, 1):
+            stats_text += f"{idx}. **ID:** {user['id']}\n"
+            stats_text += f"   **Username:** @{user['username']}\n"
+            stats_text += f"   **Tên:** {user['full_name']}\n\n"
+
+        stats_text += f"👥 **Tổng số:** {len(users_list)} người dùng"
+        bot.send_message(message.chat.id, stats_text, parse_mode='Markdown')
+
+    except Exception as e:
+        print(f"[❌ LỖI HỆ THỐNG] Đã có lỗi xảy ra khi xem stats: {str(e)}")
+
+
+@bot.message_handler(func=lambda message: message.text == "📊 List")
+def handle_list_button(message):
+    try:
+        # Kiểm tra quyền truy cập - chỉ ID 6762189023 mới được dùng nút này
+        if message.from_user.id != 6762189023:
+            bot.send_message(message.chat.id, "❌ Bạn không có quyền sử dụng tính năng này.")
+            return
+
+        if not users_list:
+            bot.send_message(message.chat.id, "📊 Chưa có người dùng nào truy cập bot.")
+            return
+
+        stats_text = "📊 **DANH SÁCH NGƯỜI DÙNG ĐÃ TRUY CẬP**\n\n"
+        for idx, user in enumerate(users_list, 1):
+            stats_text += f"{idx}. **ID:** {user['id']}\n"
+            stats_text += f"   **Username:** @{user['username']}\n"
+            stats_text += f"   **Tên:** {user['full_name']}\n\n"
+
+        stats_text += f"👥 **Tổng số:** {len(users_list)} người dùng"
+        bot.send_message(message.chat.id, stats_text, parse_mode='Markdown')
+
+    except Exception as e:
+        print(f"[❌ LỖI HỆ THỐNG] Đã có lỗi xảy ra khi xem list: {str(e)}")
+
+
+@bot.message_handler(commands=['menu'])
+def handle_menu_command(message):
+    try:
+        # Kiểm tra quyền truy cập - chỉ ID 6762189023 mới được dùng lệnh này
+        if message.from_user.id != 6762189023:
+            bot.send_message(message.chat.id, "❌ Lệnh này không có trong bot.")
+            return
+
+        # Tạo keyboard với nút List
+        markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
+        list_button = telebot.types.KeyboardButton("📊 List")
+        markup.add(list_button)
+
+        bot.send_message(message.chat.id, "📋 Menu admin đã được kích hoạt. Nhấn nút bên dưới để xem danh sách.", reply_markup=markup)
+
+    except Exception as e:
+        print(f"[❌ LỖI HỆ THỐNG] Đã có lỗi xảy ra khi kích hoạt menu: {str(e)}")
 
 
 # =====================================================================
